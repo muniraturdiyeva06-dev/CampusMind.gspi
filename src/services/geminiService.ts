@@ -198,7 +198,8 @@ export async function generateArticleSuggestions(text: string) {
 export async function generateArticleTopics(field: string) {
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
-    contents: `Foydalanuvchining "${field}" ta'lim yo'nalishi bo'yicha dolzarb va qiziqarli 5 ta ilmiy maqola mavzusini taklif qiling.
+    contents: `Foydalanuvchining "${field}" ta'lim yo'nalishi bo'yicha eng dolzarb va qiziqarli 5 ta ilmiy maqola mavzusini taklif qiling.
+    Mavzular aynan shu yo'nalishdagi so'nggi trendlar va muammolarga asoslangan bo'lsin.
     Har bir mavzu uchun qisqacha nima haqida yozish kerakligi bo'yicha tavsiya bering.
     Barcha ma'lumotlar O'zbek tilida bo'lishi SHART.`,
     config: {

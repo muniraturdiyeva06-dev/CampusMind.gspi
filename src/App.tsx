@@ -834,13 +834,32 @@ export default function App() {
   };
 
   const handleGenerateTopics = async () => {
-    if (!userProfile.fieldOfStudy) return;
+    if (!userProfile.fieldOfStudy) {
+      console.warn("Field of study is missing for topics generation");
+      return;
+    }
     setIsGeneratingTopics(true);
+    setArticleTopics(null);
     try {
+      console.log("Generating topics for:", userProfile.fieldOfStudy);
       const result = await generateArticleTopics(userProfile.fieldOfStudy);
-      setArticleTopics(result.topics);
+      if (result && result.topics) {
+        setArticleTopics(result.topics);
+      } else {
+        throw new Error("Invalid response from AI");
+      }
     } catch (error) {
       console.error("Topics generation failed:", error);
+      setNotifications(prev => [
+        { 
+          id: Date.now().toString(), 
+          title: 'Xatolik yuz berdi', 
+          message: 'Mavzularni shakllantirishda muammo bo\'ldi. Iltimos, qaytadan urinib ko\'ring.', 
+          time: 'Hozir', 
+          read: false 
+        },
+        ...prev
+      ]);
     } finally {
       setIsGeneratingTopics(false);
     }
@@ -856,6 +875,11 @@ export default function App() {
   }, [currentView, userProfile.fieldOfStudy, userProfile.fullName]);
 
   const handleScholarshipSearch = async () => {
+    if (!userProfile.fullName || !userProfile.fieldOfStudy) {
+      console.warn("Profile incomplete for scholarship search");
+      return;
+    }
+
     const profileString = `
       Ism va Familiya: ${userProfile.fullName}
       OTM: ${userProfile.university}
@@ -869,10 +893,25 @@ export default function App() {
     
     setIsSearching(true);
     try {
+      console.log("Analyzing scholarships for profile...");
       const result = await analyzeScholarshipMatch(profileString);
-      setScholarshipMatches(result.matches);
+      if (result && result.matches) {
+        setScholarshipMatches(result.matches);
+      } else {
+        throw new Error("Invalid response from AI");
+      }
     } catch (error) {
       console.error("Search failed:", error);
+      setNotifications(prev => [
+        { 
+          id: Date.now().toString(), 
+          title: 'Xatolik yuz berdi', 
+          message: 'Grantlarni tahlil qilishda muammo bo\'ldi. Iltimos, qaytadan urinib ko\'ring.', 
+          time: 'Hozir', 
+          read: false 
+        },
+        ...prev
+      ]);
     } finally {
       setIsSearching(false);
     }
@@ -1300,18 +1339,24 @@ export default function App() {
                     >
                       <Card className="p-6 bg-gradient-to-br from-teal-600 to-teal-800 text-white border-none shadow-xl shadow-teal-100">
                         <div className="flex justify-between items-start mb-4">
-                          <div className="p-2 bg-white/20 rounded-lg backdrop-blur-md">
+                          <div className="p-2 bg-teal-50 text-teal-600 rounded-lg">
                             <Target size={24} />
                           </div>
-                          <span className="text-xs font-bold bg-white/20 px-2 py-1 rounded-full backdrop-blur-md">
-                            Analiz
-                          </span>
+                          <button 
+                            onClick={handleScholarshipSearch}
+                            disabled={isSearching}
+                            className="text-[10px] font-bold text-teal-600 uppercase tracking-widest hover:underline disabled:opacity-50"
+                          >
+                            {isSearching ? 'Tahlil...' : 'Yangilash'}
+                          </button>
                         </div>
                         <h3 className="text-lg font-bold mb-1">Grantlar bilan moslik</h3>
-                        <p className="text-teal-100 text-sm mb-4">{userProfile.fieldOfStudy} yo'nalishi bo'yicha tahlil</p>
+                        <p className="text-teal-100 text-sm mb-4">
+                          {userProfile.fieldOfStudy ? `${userProfile.fieldOfStudy} yo'nalishi bo'yicha tahlil` : "Profilni to'ldiring"}
+                        </p>
                         <div className="flex items-end gap-2">
                           <span className="text-4xl font-black">
-                            {isSearching ? '...' : scholarshipMatches.find(m => m.matchScore)?.matchScore || '0%'}
+                            {isSearching ? '...' : (scholarshipMatches.find(m => (m as any).matchScore)?.matchScore || '0')}%
                           </span>
                           <span className="text-teal-200 text-sm mb-1 font-medium">eng yuqori ko'rsatkich</span>
                         </div>
@@ -1379,10 +1424,19 @@ export default function App() {
                     {/* New Recommendations Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                       <section className="space-y-4">
-                        <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
-                          <Zap size={20} className="text-amber-500" />
-                          Siz uchun mos maqola mavzulari
-                        </h3>
+                        <div className="flex justify-between items-center">
+                          <h3 className="text-xl font-bold flex items-center gap-2 text-slate-800">
+                            <Zap size={20} className="text-amber-500" />
+                            Siz uchun mos maqola mavzulari
+                          </h3>
+                          <button 
+                            onClick={handleGenerateTopics}
+                            disabled={isGeneratingTopics}
+                            className="text-xs font-bold text-teal-600 hover:bg-teal-50 px-3 py-1.5 rounded-lg transition-all disabled:opacity-50"
+                          >
+                            {isGeneratingTopics ? 'Shakllantirilmoqda...' : 'Mavzularni yangilash'}
+                          </button>
+                        </div>
                         <Card className="p-6 bg-white border-slate-200 overflow-hidden relative">
                           {isGeneratingTopics && (
                             <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center gap-3">
@@ -3110,7 +3164,7 @@ export default function App() {
                     type="submit"
                     className="w-full py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all shadow-lg shadow-teal-100 mt-2"
                   >
-                    Saqlash
+                    Saqlash va Tahlil qilish
                   </button>
                 </form>
               </div>
